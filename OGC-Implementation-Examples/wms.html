@@ -7,22 +7,85 @@
 
   <style>
     html,
-    body, 
+    body,
     #viewDiv {
       padding: 0;
       margin: 0;
-      height: 85vh;
+      height: 100%;
       width: 100%;
+      background-color: #121212;
+      color: #ffffff;
+      font-family: Arial, sans-serif;
     }
-    #requestInfo {
-      height: 15vh;
-      overflow-y: auto;
-      background: white;
+
+    #viewDiv {
+      padding: 0;
+      margin: 0;
+      height: 50%;
       width: 100%;
+
+    }
+
+    #requestInfo {
+      padding: 10px;
+      height: calc(50% - 20px); 
+      overflow: auto;
+      background: #1e1e1e;
+      width: 100%;
+      font-family: monospace;
+      white-space: pre-wrap;
+      display: flex;
+      gap: 5px;
+    }
+
+    .request-info {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 5px;
+      min-width: 600px;
+
+    }
+
+    .request-item {
+      margin-bottom: 10px;
+      border: 1px solid #333;
+      padding: 10px;
+      border-radius: 5px;
+      word-wrap: break-word;
+    }
+
+    .request-query,
+    .request-response {
+      max-width: 300px;
+    }
+
+    .request-duration {
+      text-align: center;
+      margin-top: 5px;
+    }
+
+    .json-key {
+      color: #ff79c6;
+    }
+
+    .json-value {
+      color: #bd93f9;
+    }
+
+    .json-string {
+      color: #50fa7b;
+    }
+
+    .json-boolean {
+      color: #ffb86c;
+    }
+
+    .json-null {
+      color: #f8f8f2;
     }
   </style>
 
-  <link rel="stylesheet" href="https://js.arcgis.com/4.31/esri/themes/light/main.css" />
+  <link rel="stylesheet" href="https://js.arcgis.com/4.31/esri/themes/dark/main.css" />
   <script src="https://js.arcgis.com/4.31/"></script>
 
   <script>
@@ -51,7 +114,14 @@
           after: (response) => {
             const endTime = new Date().getTime();
             const duration = endTime - startTime;
-            requestTimes.push({ url: response.url, duration: duration, query: JSON.stringify(response.requestOptions.query) });
+            const newResponse = {
+              ...response,
+              requestOptions: {
+                ...response.requestOptions, query: 'matches request query'
+              },
+
+            };
+            requestTimes.push({ response: JSON.stringify(newResponse, null, 2), duration: duration, query: JSON.stringify(response.requestOptions?.query, null, 2) });
             updateRequestInfo();
           },
         }
@@ -60,9 +130,40 @@
 
       function updateRequestInfo() {
         const requestInfo = requestTimes.map((req, index) => {
-          return `<li>Request ${index + 1}: URL: ${req.url}, Duration: ${req.duration} ms, Query: ${req.query}</li>`;
+
+          return `<div class="request-item">
+                    <div class="request-duration"><strong>Request ${index + 1} Duration:</strong> ${req.duration} ms</div>
+                    <div class="request-info">
+                      <span class="request-query"><strong>Query:</strong><br>${syntaxHighlight(req.query)}</span>
+                      <span class="request-response"><strong>Response:</strong><br>${syntaxHighlight(req.response)}</span>
+                    </div> 
+                    </div>
+                  
+                  `;
         }).join("");
-        document.getElementById("requestInfo").innerHTML = `<ul>${requestInfo}</ul>`;
+        document.getElementById("requestInfo").innerHTML = requestInfo;
+      }
+
+      function syntaxHighlight(json) {
+        if (typeof json != 'string') {
+          json = JSON.stringify(json, undefined, 2);
+        }
+        json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
+          var cls = 'json-value';
+          if (/^"/.test(match)) {
+            if (/:$/.test(match)) {
+              cls = 'json-key';
+            } else {
+              cls = 'json-string';
+            }
+          } else if (/true|false/.test(match)) {
+            cls = 'json-boolean';
+          } else if (/null/.test(match)) {
+            cls = 'json-null';
+          }
+          return '<span class="' + cls + '">' + match + '</span>';
+        });
       }
 
       const layer = new WMSLayer({
