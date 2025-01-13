@@ -1,0 +1,150 @@
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no" />
+    <title>WMSLayer | Sample | ArcGIS Maps SDK for JavaScript 4.31</title>
+
+    <link rel="stylesheet" href="example.css" />
+
+    <link rel="stylesheet" href="https://js.arcgis.com/4.31/esri/themes/dark/main.css" />
+    <script src="https://js.arcgis.com/4.31/"></script>
+
+    <script>
+
+        require([
+            "esri/Map",
+            "esri/Basemap",
+            "esri/views/MapView",
+            "esri/layers/WMTSLayer",
+            "esri/widgets/BasemapToggle",
+            "esri/config"
+        ], (Map, Basemap, MapView, WMTSLayer, BasemapToggle, esriConfig) => {
+
+            const plainIGNBasemap = new Basemap({
+                baseLayers: [
+                    new WMTSLayer({
+                        url: "https://www.ign.es/wmts/ign-base",
+                        activeLayer: { id: "IGNBase-gris", tileMatrixSetId: "GoogleMapsCompatible" },
+                        serviceMode: "KVP",
+                        copyright:
+                            `<a href="https://www.ign.es/" target="_blank">Instituto Geográfico Nacional</a>`
+                    })
+                ],
+                thumbnailUrl: "https://www.ign.es/wmts/ign-base?SERVICE=WMTS&VERSION=1.0.0&REQUEST=GetTile&LAYER=IGNBase-gris&STYLE=default&FORMAT=image%2Fjpeg&TILEMATRIXSET=GoogleMapsCompatible&TILEMATRIX=6&TILEROW=24&TILECOL=31"
+            });
+
+            const orthoIGNBasemap = new Basemap({
+                baseLayers: [
+                    new WMTSLayer({
+                        url: "https://www.ign.es/wmts/mapa-raster",
+                        activeLayer: { id: "MTN", tileMatrixSetId: "GoogleMapsCompatible" },
+                        serviceMode: "KVP",
+                        copyright:
+                            `<a href="https://www.ign.es/" target="_blank">Instituto Geográfico Nacional</a>`
+                    })
+                ],
+                thumbnailUrl: "https://www.ign.es/wmts/mapa-raster?SERVICE=WMTS&VERSION=1.0.0&REQUEST=GetTile&LAYER=MTN&STYLE=default&FORMAT=image%2Fjpeg&TILEMATRIXSET=GoogleMapsCompatible&TILEMATRIX=6&TILEROW=24&TILECOL=31"
+            });
+
+            const map = new Map({
+                basemap: plainIGNBasemap
+            });
+
+            const view = new MapView({
+                container: "viewDiv",
+                map: map,
+                center: [-3.7038, 40.4168],
+                scale: 4622333.6783341225,
+                constraints: {
+                    maxScale: 564.2497165935213
+                }
+            });
+
+            view.ui.add(
+                new BasemapToggle({
+                    view,
+                    nextBasemap: orthoIGNBasemap
+                }),
+                "bottom-left"
+            )
+
+            let startTime;
+            const requestTimes = [];
+
+            const esriInterceptor = [
+                {
+                    urls: [/\b(SERVICE=WMTS)\b/],
+                    before: () => {
+                        startTime = new Date().getTime();
+                    },
+                    after: (response) => {
+                        console.log(response);
+                        const endTime = new Date().getTime();
+                        const duration = endTime - startTime;
+                        const newResponse = {
+                            ...response,
+                            url: 'matches request url'
+                        };
+
+                        requestTimes.push({ response: JSON.stringify(newResponse, null, 2), duration: duration, query: JSON.stringify(response.url, null, 2) });
+                        updateRequestInfo();
+                    },
+                }
+            ];
+            esriConfig.request.interceptors = esriInterceptor;
+
+            function updateRequestInfo() {
+                const requestInfo = requestTimes.map((req, index) => {
+
+                    return `<div class="request-item" id=${index}>
+                    <div class="request-duration"><strong>Request ${index + 1} Duration:</strong> ${req.duration} ms</div>
+                    <div class="request-info">
+                      <span class="request-query"><strong>Request:</strong><br>${syntaxHighlight(req.query)}</span>
+                      <span class="request-response"><strong>Response:</strong><br>${syntaxHighlight(req.response)}</span>
+                    </div> 
+                    </div>
+                  
+                  `;
+                }).join("");
+
+                document.getElementById("requestInfo").innerHTML = requestInfo;
+                document.getElementById("requestInfo").scrollTo({ left: -999999999999 });
+            }
+
+            function syntaxHighlight(json) {
+                if (!json) return '';
+                if (typeof json != 'string') {
+                    json = JSON.stringify(json, undefined, 2);
+                }
+                json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
+                    var cls = 'json-value';
+                    if (/^"/.test(match)) {
+                        if (/:$/.test(match)) {
+                            cls = 'json-key';
+                        } else {
+                            cls = 'json-string';
+                        }
+                    } else if (/true|false/.test(match)) {
+                        cls = 'json-boolean';
+                    } else if (/null/.test(match)) {
+                        cls = 'json-null';
+                    }
+                    return '<span class="' + cls + '">' + match + '</span>';
+                });
+            }
+        });
+    </script>
+</head>
+
+<body>
+    <div>
+        <div id="viewDiv"></div>
+        <div id="requestInfo">
+        </div>
+
+    </div>
+</body>
+
+</html>

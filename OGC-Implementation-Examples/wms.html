@@ -5,86 +5,7 @@
   <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no" />
   <title>WMSLayer | Sample | ArcGIS Maps SDK for JavaScript 4.31</title>
 
-  <style>
-    html,
-    body {
-      padding: 0;
-      margin: 0;
-      height: 100%;
-      width: 100%;
-      background-color: #121212;
-      color: #ffffff;
-      font-family: Arial, sans-serif;
-    }
-
-    #viewDiv {
-      padding: 0;
-      margin: 0;
-      height: 50%;
-      width: 100%;
-
-    }
-
-    #requestInfo {
-      padding: 10px;
-      height: calc(50% - 20px); 
-      width: calc(100% - 20px);
-      overflow: auto;
-      background: #1e1e1e;
-
-      font-family: monospace;
-      white-space: pre-wrap;
-      display: flex;
-      gap: 5px;
-    }
-
-    .request-info {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 5px;
-      min-width: 600px;
-
-    }
-
-    .request-item {
-      margin-bottom: 10px;
-      border: 1px solid #333;
-      padding: 10px;
-      border-radius: 5px;
-      word-wrap: break-word;
-    }
-
-    .request-query,
-    .request-response {
-      max-width: 300px;
-    }
-
-    .request-duration {
-      text-align: center;
-      margin-top: 5px;
-    }
-
-    .json-key {
-      color: #ff79c6;
-    }
-
-    .json-value {
-      color: #bd93f9;
-    }
-
-    .json-string {
-      color: #50fa7b;
-    }
-
-    .json-boolean {
-      color: #ffb86c;
-    }
-
-    .json-null {
-      color: #f8f8f2;
-    }
-  </style>
-
+  <link rel="stylesheet" href="example.css" />
   <link rel="stylesheet" href="https://js.arcgis.com/4.31/esri/themes/dark/main.css" />
   <script src="https://js.arcgis.com/4.31/"></script>
 
@@ -131,17 +52,19 @@
       function updateRequestInfo() {
         const requestInfo = requestTimes.map((req, index) => {
 
-          return `<div class="request-item">
+          return `<div class="request-item" id=${index}>
                     <div class="request-duration"><strong>Request ${index + 1} Duration:</strong> ${req.duration} ms</div>
                     <div class="request-info">
-                      <span class="request-query"><strong>Query:</strong><br>${syntaxHighlight(req.query)}</span>
+                      <span class="request-query"><strong>Request:</strong><br>${syntaxHighlight(req.query)}</span>
                       <span class="request-response"><strong>Response:</strong><br>${syntaxHighlight(req.response)}</span>
                     </div> 
                     </div>
                   
                   `;
         }).join("");
+  
         document.getElementById("requestInfo").innerHTML = requestInfo;
+        document.getElementById("requestInfo").scrollTo({left: -999999999999});    
       }
 
       function syntaxHighlight(json) {
@@ -194,8 +117,10 @@
 </head>
 
 <body>
-  <div id="viewDiv"></div>
-  <div id="requestInfo">
+  <div>
+    <div id="viewDiv"></div>
+    <div id="requestInfo">
+  </div>
 
   </div>
 </body>

@@ -1,0 +1,78 @@
+html,
+body {
+    padding: 0;
+    margin: 0;
+    height: 100%;
+    width: 100%;
+    background-color: #121212;
+    color: #ffffff;
+    font-family: Arial, sans-serif;
+}
+
+#viewDiv {
+    padding: 0;
+    margin: 0;
+    height: 50%;
+    width: 100%;
+
+}
+
+#requestInfo {
+    padding: 10px;
+    height: calc(50% - 20px);
+    width: calc(100% - 20px);
+    overflow: auto;
+    background: #1e1e1e;
+
+    font-family: monospace;
+    white-space: pre-wrap;
+    display: flex;
+    gap: 5px;
+    flex-direction: row-reverse;
+}
+
+.request-info {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 5px;
+    min-width: 600px;
+
+}
+
+.request-item {
+    margin-bottom: 10px;
+    border: 1px solid #333;
+    padding: 10px;
+    border-radius: 5px;
+    word-wrap: break-word;
+}
+
+.request-query,
+.request-response {
+    max-width: 300px;
+}
+
+.request-duration {
+    text-align: center;
+    margin-top: 5px;
+}
+
+.json-key {
+    color: #ff79c6;
+}
+
+.json-value {
+    color: #bd93f9;
+}
+
+.json-string {
+    color: #50fa7b;
+}
+
+.json-boolean {
+    color: #ffb86c;
+}
+
+.json-null {
+    color: #f8f8f2;
+}
