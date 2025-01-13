@@ -23,6 +23,35 @@
        *  (c) Great Lakes Bathymetry by NGDC (http://www.ngdc.noaa.gov/mgg/greatlakes/)
        *  (c) SRTM 30m by NASA EOSDIS Land Processes Distributed Active Archive Center (LP DAAC, https://lpdaac.usgs.gov/)
        *********************************/
+
+      const layer = new WMSLayer({
+        url: "https://ows.terrestris.de/osm/service"
+      });
+      layer.load().then(() => {
+        const sublayer = layer.findSublayerByName("OSM-WMS");
+        if (sublayer) {
+          layer.sublayers = [sublayer];
+        }
+      });
+
+      const map = new Map({
+        basemap: {
+          baseLayers: [layer]
+        }
+      });
+
+      const view = new SceneView({
+        container: "viewDiv",
+        map: map,
+        spatialReference: {
+          wkid: 102100
+        }
+      });
+
+
+
+      // Custom code to intercept requests and display them
+
       let startTime;
       const requestTimes = [];
 
@@ -62,9 +91,9 @@
                   
                   `;
         }).join("");
-  
+
         document.getElementById("requestInfo").innerHTML = requestInfo;
-        document.getElementById("requestInfo").scrollTo({left: -999999999999});    
+        document.getElementById("requestInfo").scrollTo({ left: -999999999999 });
       }
 
       function syntaxHighlight(json) {
@@ -89,29 +118,6 @@
         });
       }
 
-      const layer = new WMSLayer({
-        url: "https://ows.terrestris.de/osm/service"
-      });
-      layer.load().then(() => {
-        const sublayer = layer.findSublayerByName("OSM-WMS");
-        if (sublayer) {
-          layer.sublayers = [sublayer];
-        }
-      });
-
-      const map = new Map({
-        basemap: {
-          baseLayers: [layer]
-        }
-      });
-
-      const view = new SceneView({
-        container: "viewDiv",
-        map: map,
-        spatialReference: {
-          wkid: 102100
-        }
-      });
     });
   </script>
 </head>
@@ -120,7 +126,7 @@
   <div>
     <div id="viewDiv"></div>
     <div id="requestInfo">
-  </div>
+    </div>
 
   </div>
 </body>

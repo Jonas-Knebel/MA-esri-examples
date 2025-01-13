@@ -1,0 +1,222 @@
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no" />
+    <title>WMSLayer | Sample | ArcGIS Maps SDK for JavaScript 4.31</title>
+    <style>
+        #panelItem {
+            width: 300px;
+            height: 300px;
+        }
+    </style>
+    <link rel="stylesheet" href="example.css" />
+    <link rel="stylesheet" href="https://js.arcgis.com/4.31/esri/themes/dark/main.css" />
+    <script type="module" src="https://js.arcgis.com/calcite-components/2.13.2/calcite.esm.js"></script>
+    <link rel="stylesheet" type="text/css" href="https://js.arcgis.com/calcite-components/2.13.2/calcite.css" />
+    <script src="https://js.arcgis.com/4.31/"></script>
+
+    <script>
+        require([
+            "esri/Map",
+            "esri/views/MapView",
+            "esri/layers/WFSLayer",
+            "esri/layers/ogc/wfsUtils",
+            "esri/widgets/LayerList",
+            "esri/config"
+        ], function (Map, MapView, WFSLayer, wfsUtils, LayerList, esriConfig) {
+            let wfsCapabilities;
+
+            // set up map and view
+            const map = new Map({
+                basemap: "gray-vector"
+            });
+
+            const view = new MapView({
+                container: "viewDiv",
+                map: map,
+                center: [2.55054, 46.90664],
+                zoom: 5,
+                popup: {
+                    defaultPopupTemplateEnabled: true // popup will be enabled on the wfslayer
+                }
+            });
+
+            /**
+          // create and add a WFSLayer to the map
+          const layer = new WFSLayer({
+            url: "https://geobretagne.fr/geoserver/ows", // url to your WFS endpoint
+            name: "fma:bvme_zhp_vs_culture", // name of the FeatureType
+            copyright: "GéoBretagne"
+          });
+          map.add(layer);
+          **/
+
+            // add UI panel to the top-right of the view
+            const panel = document.getElementById("panelItem");
+            view.ui.add(panel, "top-right");
+            // create layerlist and add it to view
+            view.ui.add(
+                new LayerList({
+                    view: view
+                }),
+                "bottom-left"
+            );
+
+            const wfsEndpoint = document.getElementById("endpoint"); // input value containing WFS endpoint url
+            const listArea = document.getElementById("listArea");
+            const warning = document.getElementById("warning");
+            const loader = document.getElementById("loader"); // create loader icon to display while featuretypes are loading
+            const capabilitiesBtn = document.getElementById("getCapabilities");
+            capabilitiesBtn.addEventListener("click", getCapabilities);
+
+            function getCapabilities() {
+                listArea.innerHTML = ""; // clear the list of featuretypes when a new GetCapabilites request is execute
+                loader.hidden = false;
+                const url = wfsEndpoint.value;
+                if (url) {
+                    // call get capabilities request on the WFS endpoint
+                    wfsUtils
+                        .getCapabilities(url)
+                        .then((capabilities) => {
+                            warning.open = false;
+                            wfsCapabilities = capabilities;
+                            // create list of featuretypes from the capabilities result
+                            createLayerList(wfsCapabilities.featureTypes);
+                        })
+                        .catch((error) => {
+                            warning.open = true;
+                        });
+                }
+            }
+
+            // create a list from the featureTypes available in the service
+            function createLayerList(featureTypes) {
+                const list = document.createElement("calcite-list");
+                list.filterEnabled = true;
+                featureTypes.forEach((feature) => {
+                    const listitem = document.createElement("calcite-list-item");
+                    listitem.label = feature.title;
+                    listitem.value = feature.name;
+                    listitem.addEventListener("click", updateSelectedLayer);
+                    list.appendChild(listitem);
+                });
+                listArea.appendChild(list);
+                loader.hidden = true; // stop loading
+            }
+
+            // get information about the selected feature type and add the wfslayer to the map
+            function updateSelectedLayer(event) {
+                view.closePopup();
+                // get the layer name from the clicked item
+                const layerName = event.target.value;
+                // get layer info for the feature type that was clicked
+                wfsUtils.getWFSLayerInfo(wfsCapabilities, layerName).then((wfsLayerInfo) => {
+                    // remove existing layers from the map
+                    map.layers.removeAll();
+                    // create a WFSLayer from the layer info
+                    const layer = WFSLayer.fromWFSLayerInfo(wfsLayerInfo);
+                    map.add(layer);
+                    layer.when(() => {
+                        // zoom to the layer's extent once it loads
+                        view.goTo(layer.fullExtent);
+                    });
+                });
+            }
+
+            // Custom code to intercept requests and display them
+
+            let startTime;
+            const requestTimes = [];
+
+            const esriInterceptor = [
+                {
+                    urls: [/\b(wfs)\b/],
+                    before: () => {
+                        startTime = new Date().getTime();
+                    },
+                    after: (response) => {
+                        console.log(response);
+                        const endTime = new Date().getTime();
+                        const duration = endTime - startTime;
+                        const newResponse = {
+                            ...response,
+ 
+                        };
+                        requestTimes.push({ response: JSON.stringify(newResponse, null, 2), duration: duration, query: JSON.stringify(response.requestOptions?.query, null, 2) });
+                        updateRequestInfo();
+                    },
+                }
+            ];
+            esriConfig.request.interceptors = esriInterceptor;
+
+            function updateRequestInfo() {
+                const requestInfo = requestTimes.map((req, index) => {
+
+                    return `<div class="request-item" id=${index}>
+                    <div class="request-duration"><strong>Request ${index + 1} Duration:</strong> ${req.duration} ms</div>
+                    <div class="request-info">
+                      <span class="request-query"><strong>Request:</strong><br>${syntaxHighlight(req.query)}</span>
+                      <span class="request-response"><strong>Response:</strong><br>${syntaxHighlight(req.response)}</span>
+                    </div> 
+                    </div>
+                  
+                  `;
+                }).join("");
+
+                document.getElementById("requestInfo").innerHTML = requestInfo;
+                document.getElementById("requestInfo").scrollTo({ left: -999999999999 });
+            }
+
+            function syntaxHighlight(json) {
+                if (typeof json != 'string') {
+                    json = JSON.stringify(json, undefined, 2);
+                }
+                json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
+                    var cls = 'json-value';
+                    if (/^"/.test(match)) {
+                        if (/:$/.test(match)) {
+                            cls = 'json-key';
+                        } else {
+                            cls = 'json-string';
+                        }
+                    } else if (/true|false/.test(match)) {
+                        cls = 'json-boolean';
+                    } else if (/null/.test(match)) {
+                        cls = 'json-null';
+                    }
+                    return '<span class="' + cls + '">' + match + '</span>';
+                });
+            }
+
+        });
+    </script>
+</head>
+
+<body>
+    <div>
+        <calcite-panel id="panelItem" theme="dark" scale="s">
+            <div style="padding: 12px">
+                <calcite-label status="idle" scale="s">
+                    OGC WFS endpoint
+                    <calcite-input id="endpoint" type="text" status="idle"
+                        value="https://geobretagne.fr/geoserver/ows"></calcite-input>
+                </calcite-label>
+                <calcite-button scale="s" slot="input-action" id="getCapabilities"> GetCapabilities </calcite-button>
+            </div>
+            <calcite-loader id="loader" type="indeterminate" hidden="true"></calcite-loader>
+            <calcite-notice id="warning" kind="warning" icon="exclamation-mark-triangle" width="full">
+                <div slot="title">Unsupported WFS</div>
+                <div slot="message">The WFS service must support WFS 2.0.0 and have GeoJSON output format enabled.</div>
+            </calcite-notice>
+            <div id="listArea"></div>
+        </calcite-panel>
+        <div id="viewDiv"></div>
+        <div id="requestInfo">
+        </div>
+
+    </div>
+</body>
+
+</html>

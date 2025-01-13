@@ -50,6 +50,8 @@ body {
 .request-query,
 .request-response {
     max-width: 300px;
+    max-height: 300px;
+    overflow: auto;
 }
 
 .request-duration {
