@@ -7,11 +7,17 @@
 
   <style>
     html,
-    body,
+    body, 
     #viewDiv {
       padding: 0;
       margin: 0;
-      height: 100%;
+      height: 85vh;
+      width: 100%;
+    }
+    #requestInfo {
+      height: 15vh;
+      overflow-y: auto;
+      background: white;
       width: 100%;
     }
   </style>
@@ -20,7 +26,7 @@
   <script src="https://js.arcgis.com/4.31/"></script>
 
   <script>
-    require(["esri/Map", "esri/views/SceneView", "esri/layers/WMSLayer"], (Map, SceneView, WMSLayer) => {
+    require(["esri/Map", "esri/views/SceneView", "esri/layers/WMSLayer", "esri/config"], (Map, SceneView, WMSLayer, esriConfig) => {
 
       /***********************************
        * Data attribution:
@@ -33,6 +39,32 @@
        *  (c) Great Lakes Bathymetry by NGDC (http://www.ngdc.noaa.gov/mgg/greatlakes/)
        *  (c) SRTM 30m by NASA EOSDIS Land Processes Distributed Active Archive Center (LP DAAC, https://lpdaac.usgs.gov/)
        *********************************/
+      let startTime;
+      const requestTimes = [];
+
+      const esriInterceptor = [
+        {
+          urls: [/\b(osm\/service)\b/],
+          before: () => {
+            startTime = new Date().getTime();
+          },
+          after: (response) => {
+            const endTime = new Date().getTime();
+            const duration = endTime - startTime;
+            requestTimes.push({ url: response.url, duration: duration, query: JSON.stringify(response.requestOptions.query) });
+            updateRequestInfo();
+          },
+        }
+      ];
+      esriConfig.request.interceptors = esriInterceptor;
+
+      function updateRequestInfo() {
+        const requestInfo = requestTimes.map((req, index) => {
+          return `<li>Request ${index + 1}: URL: ${req.url}, Duration: ${req.duration} ms, Query: ${req.query}</li>`;
+        }).join("");
+        document.getElementById("requestInfo").innerHTML = `<ul>${requestInfo}</ul>`;
+      }
+
       const layer = new WMSLayer({
         url: "https://ows.terrestris.de/osm/service"
       });
@@ -62,6 +94,9 @@
 
 <body>
   <div id="viewDiv"></div>
+  <div id="requestInfo">
+
+  </div>
 </body>
 
 </html>
