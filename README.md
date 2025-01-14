@@ -16,4 +16,5 @@ A sample implementation of a WMTS layer using the ArcGIS Maps SDK for JavaScript
 
 ### Web Feature Service (WFS)
 A sample implementation of a WFS  using the ArcGIS Maps SDK for JavaScript.
+
 [VIew WTFS Example](https://jonas-knebel.github.io/MA-esri-examples/OGC-Implementation-Examples/wfs.html) based on [Esri](https://developers.arcgis.com/javascript/latest/sample-code/sandbox/?sample=layers-wfs) and using the data of [Link](https://firms.modaps.eosdis.nasa.gov/mapserver/)
